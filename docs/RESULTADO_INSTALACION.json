@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "zip": "Embajada_Paisa_Sprint_1_Laravel.zip",
+  "fresh_install": true,
+  "repeated_install": true,
+  "counts": {
+    "users": 7,
+    "clientes": 12,
+    "mesas": 8,
+    "productos": 12,
+    "categorias": 4,
+    "pedidos": 0,
+    "pagos": 0
+  },
+  "sqlite_integrity": "ok",
+  "blade_compilation": true
+}

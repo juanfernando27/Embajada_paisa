@@ -1,0 +1,7 @@
+@extends('layouts.app')
+@section('title', 'Configuración')
+@section('content')
+
+<div class="page-intro"><div><div class="eyebrow">INFORMACIÓN PÚBLICA</div><h1>Datos del restaurante</h1><p>Completa los datos reales que verán tus clientes.</p></div></div><form class="panel form-panel" method="post" action="{{ route('restaurante.update') }}">@csrf @method('PUT')<div class="form-grid"><x-field name="nombre" label="Nombre" :required="true" :value="$info->nombre" maxlength="120"/><x-field name="ciudad" label="Ciudad y departamento" :required="true" :value="$info->ciudad" maxlength="100"/><x-field name="direccion" label="Dirección" :value="$info->direccion" maxlength="200"/><x-field name="telefono" label="Teléfono" :value="$info->telefono" maxlength="30"/><x-field name="horario" label="Horario de atención (informativo)" :value="$info->horario" maxlength="300"/><div class="field"><label for="descripcion">Descripción</label><textarea id="descripcion" name="descripcion" maxlength="3000" rows="3">{{ old('descripcion',$info->descripcion) }}</textarea></div><x-field name="latitud" label="Latitud (opcional)" type="number" step="any" min="-90" max="90" :value="$info->latitud" hint="Completa ambas coordenadas para el enlace al mapa."/><x-field name="longitud" label="Longitud (opcional)" type="number" step="any" min="-180" max="180" :value="$info->longitud"/></div><div class="form-actions"><button class="button">Guardar información</button></div></form>
+
+@endsection

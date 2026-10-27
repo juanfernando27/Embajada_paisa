@@ -1,0 +1,7 @@
+@extends('layouts.app')
+@section('title', 'Auditoría')
+@section('content')
+
+<div class="page-intro"><div><div class="eyebrow">TRAZABILIDAD DE LA OPERACIÓN</div><h1>Registro de auditoría</h1><p>Acciones, responsables y motivos. Consulta de solo lectura.</p></div></div><section class="panel"><form class="list-toolbar search-form" method="get"><label class="search-box"><x-icon name="search"/><input name="accion" value="{{ $filters['accion']??'' }}" maxlength="80" placeholder="Acción exacta, ej. pedido_anulado" aria-label="Filtrar acción"></label><button class="button secondary">Filtrar</button><a class="text-link" href="{{ route('auditoria') }}">Ver todas</a></form><div class="audit-list">@forelse($auditorias as $a)<article><div class="audit-meta"><strong>{{ str_replace('_',' ',$a->accion) }}</strong><span>{{ $a->entidad }} #{{ $a->entidad_id }}</span><small>{{ $a->created_at->format('d/m/Y H:i:s') }} · {{ $a->usuario?->name??'Sistema' }}</small></div>@if($a->motivo)<p>{{ $a->motivo }}</p>@endif<details><summary>Ver cambios</summary><div class="audit-diff"><div><h3>Antes</h3><pre>{{ json_encode($a->antes,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE) }}</pre></div><div><h3>Después</h3><pre>{{ json_encode($a->despues,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE) }}</pre></div></div></details></article>@empty<div class="empty">Sin acciones para este filtro.</div>@endforelse</div>{{ $auditorias->links() }}</section>
+
+@endsection

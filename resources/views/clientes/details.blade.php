@@ -1,0 +1,3 @@
+<section class="panel detail-panel"><div class="profile-banner"><span class="avatar large">{{ mb_substr($cliente->nombre, 0, 1) }}{{ mb_substr($cliente->apellido, 0, 1) }}</span><div><h2>{{ $cliente->nombre_completo }}</h2><p>Datos de identificación y contacto</p></div></div>
+<dl class="detail-grid"><div><dt>Tipo de documento</dt><dd>{{ ['CC'=>'Cédula de ciudadanía','CE'=>'Cédula de extranjería','TI'=>'Tarjeta de identidad','PAS'=>'Pasaporte'][$cliente->tipo_documento] }}</dd></div><div><dt>Número de documento</dt><dd>{{ $cliente->numero_documento }}</dd></div><div><dt>Teléfono</dt><dd>{{ $cliente->telefono }}</dd></div><div><dt>Correo electrónico</dt><dd>{{ $cliente->email ?? 'Sin correo registrado' }}</dd></div></dl>
+</section>

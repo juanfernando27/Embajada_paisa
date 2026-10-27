@@ -1,0 +1,8 @@
+PHP 8.3.6 / SQLite · Ampliación de fotografías
+
+  ............................................................................
+  ....................
+
+  Tests:    96 passed (420 assertions)
+  Duration: 3.65s
+

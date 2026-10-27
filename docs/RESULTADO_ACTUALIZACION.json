@@ -1,0 +1,36 @@
+{
+  "result": "PASS",
+  "old_tables_preserved": [
+    "migrations",
+    "users",
+    "password_reset_tokens",
+    "sessions",
+    "cache",
+    "cache_locks",
+    "jobs",
+    "job_batches",
+    "failed_jobs",
+    "clientes",
+    "mesas"
+  ],
+  "new_tables": [
+    "pos_locks",
+    "categorias",
+    "productos",
+    "carrito_items",
+    "metodos_pago",
+    "pedidos",
+    "pedido_items",
+    "pedido_estados",
+    "reservas",
+    "caja_turnos",
+    "pagos",
+    "auditorias",
+    "restaurante_config"
+  ],
+  "original_migrations_unchanged": true,
+  "env_unchanged": true,
+  "password_hashes_unchanged": true,
+  "backup_readable": true,
+  "repeated_upgrade_safe": true
+}

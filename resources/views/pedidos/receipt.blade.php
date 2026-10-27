@@ -1,0 +1,7 @@
+@extends('layouts.app')
+@section('title', 'Comprobante interno')
+@section('content')
+
+<section class="panel receipt"><div class="eyebrow">LA EMBAJADA PAISA</div><h1>{{ $pedido->codigo }}</h1><p>{{ $pedido->pago->created_at->format('d/m/Y H:i') }}</p><hr>@foreach($pedido->items as $i)<div class="receipt-line"><span>{{ $i->cantidad }}× {{ $i->nombre }}</span><span>{{ \App\Support\Money::format($i->total_centavos) }}</span></div>@endforeach<hr><div class="receipt-line"><span>Subtotal</span><span>{{ \App\Support\Money::format($pedido->subtotal_centavos) }}</span></div><div class="receipt-line"><span>Descuento</span><span>{{ \App\Support\Money::format($pedido->descuento_centavos) }}</span></div><div class="receipt-line grand-total"><strong>Total pagado</strong><strong>{{ \App\Support\Money::format($pedido->pago->monto_centavos) }}</strong></div><div class="receipt-line"><span>{{ $pedido->pago->metodoPago->nombre }} · recibido</span><span>{{ \App\Support\Money::format($pedido->pago->recibido_centavos) }}</span></div><div class="receipt-line"><span>Cambio</span><span>{{ \App\Support\Money::format($pedido->pago->cambio_centavos) }}</span></div>@if($pedido->pago->referencia)<p class="fine-print">Referencia: {{ $pedido->pago->referencia }}</p>@endif<hr><p>Gracias por compartir nuestra mesa.</p><p class="fine-print">Comprobante interno. No es factura electrónica.</p><button type="button" class="button secondary spaced no-print" data-print>Imprimir comprobante</button></section>
+
+@endsection

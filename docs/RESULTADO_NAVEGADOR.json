@@ -1,0 +1,15 @@
+{
+  "result": "PASS",
+  "widths": [
+    1440,
+    834,
+    390
+  ],
+  "routes": 22,
+  "pageOverflow": false,
+  "detectedGreen": false,
+  "localFonts": true,
+  "mobileMenuAndEscape": true,
+  "passwordConfirmation": true,
+  "javascriptErrors": []
+}
