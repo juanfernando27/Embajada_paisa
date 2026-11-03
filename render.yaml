@@ -1,0 +1,21 @@
+# "Blueprint" de Render: crea el servicio web y una base de datos PostgreSQL, ya conectados.
+# Cambie "mi-laravel" y "mi-laravel-db" por nombres suyos (en minúsculas y sin espacios).
+services:
+  - type: web
+    name: mi-laravel
+    runtime: docker
+    plan: free
+    envVars:
+      # Clave de la aplicación: Render la pide al crear el Blueprint (ver README).
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        fromDatabase:
+          name: mi-laravel-db
+          property: connectionString
+
+databases:
+  - name: mi-laravel-db
+    plan: free

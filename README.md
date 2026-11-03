@@ -1,77 +1,131 @@
-# Actualización con fotografías de productos
+# Kit para desplegar un proyecto Laravel en Render
 
-Esta entrega ya incluye los cambios: no necesitas pegar código manualmente. En la carpeta exterior puedes ejecutar `INICIAR_WINDOWS.bat`; también puedes usar los comandos indicados abajo.
+Con estos archivos usted puede desplegar **su proyecto Laravel** en [Render](https://render.com) **sin saber Docker**: los copia a la raíz de su proyecto, sube el proyecto a GitHub y crea el servicio en Render.
 
-Si conservas tu instalación anterior, copia su `.env`, `database/database.sqlite` y `storage/app/public` dentro de `embajada-paisa` antes de iniciar. Tus cuentas y contraseñas se mantienen.
+Render no tiene PHP de forma nativa, por eso se despliega con Docker. El `Dockerfile` de este kit hace todo el trabajo: instala PHP y Apache, instala las dependencias con Composer, compila el frontend (Vite) si su proyecto lo tiene, y al arrancar crea las tablas de la base de datos.
 
-# La Embajada Paisa · Restaurante y POS
+## Qué necesita
 
-Actualización del proyecto **Embajada_Paisa_Sprint_1_Laravel.zip**. Se conservan Laravel 12, PHP 8.2+, Blade, SQLite, autenticación, roles, clientes y mesas. Se integran los **22 requerimientos RF-01 a RF-22 de las capturas**, cocina, caja, reportes y auditoría.
+- Un proyecto **Laravel** que ya funcione en su computador (Laravel 12 o 13 probados; los anteriores deberían funcionar, pero no se probaron).
+- Una cuenta de **GitHub** y una de **Render** (puede entrar a Render con GitHub).
+- **Git** instalado.
 
-## Actualizar tu proyecto existente
+## Los archivos del kit
 
-1. Detén el servidor anterior y conserva una copia completa de su carpeta.
-2. Descomprime este ZIP en **otra carpeta**. Copia desde la anterior tu `.env` y tu `database/database.sqlite` a los mismos lugares en la carpeta nueva. Si configuraste otra ruta SQLite, conserva ese archivo y su ruta.
-3. Abre la terminal en la carpeta nueva `embajada-paisa`, donde está `artisan`:
+Copie estos **cuatro** archivos a la **raíz de su proyecto** (la carpeta donde está `artisan`):
 
-```bash
-php actualizar.php
-php artisan serve
+| Archivo | Para qué sirve |
+|---|---|
+| `Dockerfile` | Describe cómo construir y ejecutar su aplicación. |
+| `docker/entrypoint.sh` | Se ejecuta al arrancar: configura el puerto, genera la clave si falta y corre las migraciones. (Cree la carpeta `docker` dentro de su proyecto.) |
+| `.dockerignore` | Evita enviar al servidor archivos que no hacen falta (`vendor`, `node_modules`, su `.env`...). |
+| `render.yaml` | Le dice a Render que cree el servicio web **y** una base de datos PostgreSQL, ya conectados. |
+
+Su proyecto debe quedar así:
+
+```
+su-proyecto/
+├── app/
+├── artisan
+├── composer.json
+├── composer.lock
+├── Dockerfile            ← nuevo
+├── .dockerignore         ← nuevo
+├── render.yaml           ← nuevo
+└── docker/
+    └── entrypoint.sh     ← nuevo
 ```
 
-El actualizador respalda SQLite y `.env` en `backups/` antes de migrar; no cambia la clave ni las contraseñas. No utiliza `migrate:fresh`. **Tus cuentas conservan sus contraseñas actuales.** Consulta [la guía de actualización](docs/ACTUALIZAR.md) para rutas personalizadas y restauración.
+## Antes de empezar: revise esto
 
-Si descargaste la **versión ligera**, ejecuta primero `composer install` para recuperar `vendor`. La versión completa ya incluye las dependencias de desarrollo. No necesitas Node, npm ni compilar el frontend.
+1. **Versión de PHP.** El `Dockerfile` usa PHP 8.4. Abra su `composer.json` y mire la línea `"php": "..."`. Si su proyecto necesita otra versión, cambie la primera línea del `Dockerfile` (`ARG PHP_VERSION=8.4`), por ejemplo a `8.3`.
+2. **`composer.lock` debe estar en el repositorio** (no lo ponga en `.gitignore`). Así se instalan las mismas versiones que usted probó.
+3. **No suba su `.env` ni la carpeta `vendor`.** El `.gitignore` de Laravel ya los excluye: no lo cambie. Los secretos se escriben en Render, no en el repositorio.
+4. **La base de datos en Render es PostgreSQL.** Si en su computador usa MySQL o SQLite, sus migraciones deben servir también en PostgreSQL. Casi siempre funcionan sin cambios; fallan si usan SQL escrito a mano propio de MySQL.
+5. **Nombres del `render.yaml`.** Cambie `mi-laravel` y `mi-laravel-db` por nombres suyos (en minúsculas, sin espacios). Si cambia el nombre de la base de datos, cámbielo también en `fromDatabase`.
 
-## Instalación nueva para demostrar
+## Probar en su computador (opcional)
+
+Si tiene Docker Desktop, puede comprobar que la imagen funciona antes de subir nada:
 
 ```bash
-php preparar.php --demo
-php artisan serve
+docker build -t mi-laravel .
+docker run --rm -p 8080:10000 mi-laravel
 ```
 
-Abre http://127.0.0.1:8000. Se crean cuentas ficticias, clientes, 8 mesas, 4 categorías y 12 productos ilustrativos. No se crean pedidos ni cobros automáticamente.
+Abra <http://localhost:8080/>. Esta prueba usa SQLite, sin PostgreSQL.
 
-| Rol | Correo demo | Contraseña demo |
+## Subir el proyecto a GitHub
+
+Si su proyecto ya está en un repositorio de GitHub, solo haga:
+
+```bash
+git add Dockerfile .dockerignore render.yaml docker
+git commit -m "Agregar archivos de despliegue en Render"
+git push
+```
+
+Si aún no tiene repositorio, cree uno en GitHub (vacío) y, desde la carpeta de su proyecto:
+
+```bash
+git init -b main
+git add .
+git commit -m "Proyecto Laravel"
+git remote add origin <URL-DE-SU-REPOSITORIO>
+git push -u origin main
+```
+
+## Desplegar en Render
+
+1. **Genere la clave de la aplicación** (`APP_KEY`). En una terminal:
+
+   ```bash
+   echo "base64:$(openssl rand -base64 32)"
+   ```
+
+   Copie el resultado completo (empieza por `base64:`). *(En Windows, dentro de Git Bash funciona igual. Otra opción: `php artisan key:generate --show` en su proyecto.)*
+
+2. Entre a [dashboard.render.com](https://dashboard.render.com), pulse **New +** y elija **Blueprint**.
+3. Conecte su cuenta de GitHub si se lo pide y elija **su repositorio**. Render lee el `render.yaml`.
+4. Render le pedirá el valor de **`APP_KEY`**: pegue la clave del paso 1. Pulse **Apply** / **Deploy**.
+5. Espere. La primera vez tarda unos minutos porque construye la imagen. Abra la pestaña **Logs** del servicio web para ver el avance.
+6. Cuando el servicio aparezca como **Live**, abra la URL que muestra Render (`https://...onrender.com`).
+
+Cada vez que haga `git push` a la rama `main`, Render vuelve a desplegar solo.
+
+### Cómo saber que salió bien
+
+- En los **Logs** debe ver las migraciones: líneas con `create_..._table ... DONE`, y después Apache iniciando.
+- La URL abre su aplicación. Pruebe crear, editar y eliminar datos; después haga un **Manual Deploy** y compruebe que los datos siguen ahí (porque están en PostgreSQL).
+
+## Variables de entorno (opcionales)
+
+Se cambian en el servicio, en **Environment**. Render vuelve a desplegar al guardarlas.
+
+| Variable | Valor | Para qué |
 |---|---|---|
-| Administrador | admin@embajada.test | Embajada2026! |
-| Personal / trabajador | trabajador@embajada.test | Embajada2026! |
-| Cliente | cliente@embajada.test | Embajada2026! |
+| `APP_KEY` | `base64:...` | La clave de la aplicación (ya la definió al crear el Blueprint). |
+| `APP_URL` | `https://su-servicio.onrender.com` | La dirección pública. Opcional: la aplicación arma sus enlaces con la petición. |
+| `APP_DEBUG` | `false` | **No la ponga en `true` en producción**: muestra detalles internos. Úsela solo un momento para ver un error 500 y vuelva a ponerla en `false`. |
+| `RUN_SEEDERS` | `true` | Ejecuta `php artisan db:seed` al arrancar (por defecto no se ejecuta). |
+| `RUN_MIGRATIONS` | `false` | Evita que se ejecuten las migraciones al arrancar (por defecto sí se ejecutan). |
 
-Estas credenciales solo corresponden a cuentas demo creadas por el instalador; no sustituyen las de una base existente. Para añadir únicamente el catálogo ficticio a una instalación actualizada: `php artisan db:seed --class=PosDemoSeeder`. Conserva productos ya existentes. Para una instalación sin demostración: `php preparar.php`, configura `EMB_ADMIN_EMAIL` y `EMB_ADMIN_PASSWORD` en `.env`, ejecuta `php artisan db:seed` y después retira esa contraseña del archivo.
+Otras variables que su proyecto necesite (correo, claves de APIs...) también se agregan ahí, igual que en su `.env`.
 
-En XAMPP puedes usar `C:\xampp\php\php.exe` en lugar de `php`. Habilita `pdo_sqlite`, `sqlite3`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `fileinfo` y `dom`. SQLite no necesita iniciar MySQL. La base activa se configura en **`.env`**; `.env.example` es solo la plantilla. Esta entrega mantiene SQLite como motor.
+## Cosas que debe saber del plan gratuito
 
-## Fotos de productos y mejora visual
+- El servicio se **"duerme"** tras unos 15 minutos sin visitas. La primera petición después tarda cerca de un minuto.
+- La base de datos PostgreSQL **gratuita caduca** pasado un tiempo (hace poco eran unos 30 días): revise las condiciones vigentes en Render.
+- Los **archivos que los usuarios suban** a la carpeta `storage` se pierden en cada despliegue o reinicio: el disco del plan gratuito es temporal.
 
-Productos permite subir JPG, PNG y WEBP de hasta 2 MB, previsualizar, reemplazar o quitar la foto. La imagen se muestra en la carta, detalle, carrito y listado administrativo. Una migración añade `imagen` sin borrar registros. Las fotografías se sirven mediante una ruta pública acotada; funciona en Windows sin crear enlaces simbólicos.
+## Si algo falla
 
-Para actualizar, conserva también tu carpeta `storage/app/public` junto con `.env` y SQLite. Si ya creaste manualmente una migración de imagen, la nueva comprueba si existe la columna. Las dos imágenes gastronómicas incluidas son ilustrativas, generadas para esta interfaz; puedes sustituir las fotos de los productos desde Productos.
-
-## Qué se agregó
-
-- Registro público de clientes; menú, detalle, filtros y carrito persistente.
-- Pedidos con precios calculados por servidor, existencias opcionales, seguimiento e historial de estados; panel de cocina.
-- Reservas con disponibilidad por fecha/hora, capacidad, detección de cruces, edición y cancelación.
-- Gestión de productos/categorías, clientes, usuarios y mesas; permisos en servidor.
-- Caja con apertura, registro de cobros, cambio, cierre y diferencias; descuentos y anulaciones con motivo.
-- Reportes por período, exportación CSV, comprobante interno imprimible y auditoría.
-- Información pública y ubicación del restaurante, configurables por administrador.
-
-Los cobros en efectivo, tarjeta y transferencia se **registran** después de recibir/verificar el pago; no se conecta una pasarela bancaria. El comprobante es interno, no una factura electrónica. Configura dirección, teléfono, horarios y coordenadas reales en **Configuración**; no se inventaron esos datos.
-
-## Tema vinotinto
-
-Los tokens están al inicio de `public/css/app.css`: primario `#4A0E1C`, secundario `#7B1E2B`, acento `#C9A227`, fondo oscuro `#1A0A0F`, fondo claro `#FAF7F5` y textos `#F5F0EC` / `#2B1B1F`. Todos los módulos comparten esos tokens y el layout Blade. Playfair Display e Inter se sirven desde `public/fonts/` con sus licencias, sin depender de Google Fonts al ejecutar. Incluye navegación móvil, foco de teclado y reducción de animaciones según la preferencia del sistema.
-
-## Cómo comprobarlo
-
-```bash
-php artisan test
-php vendor/bin/pint --test
-php artisan view:cache
-```
-
-La suite usa SQLite en memoria separada de tus datos. Resultado de entrega: **96 pruebas, 420 aserciones**, comprobación de actualización sobre el ZIP original y revisión en Chromium a 1440, 834 y 390 px.
-
-Documentación: [checklist RF-01–22](docs/CHECKLIST_REQUERIMIENTOS.md), [recorrido de demostración](docs/GUIA_DEMOSTRACION.md), [arquitectura y API](docs/ARQUITECTURA_Y_API.md), [verificación y límites](docs/VERIFICACION.md).
+| Síntoma | Qué hacer |
+|---|---|
+| El despliegue falla al construir, con un mensaje sobre `php >= 8.x` | Su `composer.lock` exige otra versión de PHP: cambie `ARG PHP_VERSION` en el `Dockerfile` (ver *Antes de empezar*). |
+| `could not find driver` | Su `DB_CONNECTION` no es `pgsql` o falta `DB_URL`: revise que la base de datos del Blueprint esté creada y enlazada. |
+| Error 500 al abrir la página | Ponga `APP_DEBUG=true` un momento, lea el error y vuelva a ponerlo en `false`. Mire también los **Logs**. |
+| La página sale sin estilos | Su frontend no se compiló: revise que `package.json` tenga un script `"build"` y que `npm run build` funcione en su computador. |
+| "No open ports detected" | No cambie el `ENTRYPOINT` ni `docker/entrypoint.sh`: son los que configuran el puerto de Render. |
+| Los *seeders* fallan con `Call to undefined function fake()` | Los seeders que usan *factories* necesitan Faker en producción: ejecute `composer require fakerphp/faker` (lo mueve a `require`), haga commit de `composer.json` y `composer.lock` y vuelva a subir. |
+| Las migraciones fallan en PostgreSQL | Alguna migración usa SQL propio de MySQL. Corríjala para que use el constructor de esquemas de Laravel. |
