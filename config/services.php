@@ -1,6 +1,29 @@
 <?php
 
+$appleKey = env('APPLE_PRIVATE_KEY_BASE64')
+    ? base64_decode((string) env('APPLE_PRIVATE_KEY_BASE64'), true)
+    : env('APPLE_PRIVATE_KEY_PATH');
+$appleSecret = env('APPLE_CLIENT_SECRET');
+
 return [
+    'google' => [
+        'enabled' => filled(env('GOOGLE_CLIENT_ID')) && filled(env('GOOGLE_CLIENT_SECRET')),
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI') ?: rtrim((string) env('APP_URL', 'http://localhost:8000'), '/').'/auth/google/callback',
+    ],
+
+    'apple' => [
+        'enabled' => filled(env('APPLE_CLIENT_ID')) && (filled($appleSecret)
+            || (filled($appleKey) && filled(env('APPLE_TEAM_ID')) && filled(env('APPLE_KEY_ID')))),
+        'client_id' => env('APPLE_CLIENT_ID'),
+        'client_secret' => $appleSecret ?: '',
+        'redirect' => env('APPLE_REDIRECT_URI') ?: rtrim((string) env('APP_URL', 'http://localhost:8000'), '/').'/auth/apple/callback',
+        'team_id' => env('APPLE_TEAM_ID'),
+        'key_id' => env('APPLE_KEY_ID'),
+        'private_key' => $appleKey ?: '',
+    ],
+
 
     /*
     |--------------------------------------------------------------------------

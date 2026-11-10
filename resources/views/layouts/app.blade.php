@@ -3,6 +3,7 @@
 @php
 $links=$u?[['dashboard','Inicio','home','dashboard']]:[];
 $links[]=['menu.index','Nuestra carta','menu','menu.*'];
+if($u && (config('services.google.enabled') || config('services.apple.enabled'))){$links[]=['cuenta.conexiones','Conexiones','lock','cuenta.conexiones'];}
 if($u){$links[]=['carrito.index','Carrito','bag','carrito.*'];$links[]=['pedidos.index',$u->rol==='cliente'?'Mis pedidos':'Pedidos','receipt','pedidos.*'];$links[]=['reservas.index',$u->rol==='cliente'?'Mis reservas':'Reservas','calendar','reservas.*'];if($u->rol!=='cliente'){foreach([['cocina','Cocina','cook','cocina'],['caja.index','Caja','cash','caja.*'],['mesas.index','Mesas','table','mesas.*'],['clientes.index','Clientes','users','clientes.*']] as $l)$links[]=$l;}else $links[]=['perfil','Mi perfil','users','perfil'];if($u->esAdministrador()){foreach([['productos.index','Productos','menu','productos.*'],['categorias.index','Categorías','grid','categorias.*'],['usuarios.index','Usuarios y roles','shield','usuarios.*'],['historial','Historial de pedidos','receipt','historial'],['reportes.index','Reportes','chart','reportes.*'],['auditoria','Auditoría','eye','auditoria'],['restaurante.edit','Configuración','settings','restaurante.edit']] as $l)$links[]=$l;}}
 $links[]=['restaurante.show','El restaurante','pin','restaurante.show'];
 @endphp

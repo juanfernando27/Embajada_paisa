@@ -13,6 +13,7 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\RestaurantController;
+use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\UsuarioController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -21,10 +22,19 @@ Route::get('/', fn () => redirect()->route(auth()->check() ? 'dashboard' : 'logi
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [AuthController::class, 'store'])->name('login.store');
+    Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+        ->whereIn('provider', ['google', 'apple'])->middleware('throttle:20,1,oauth-start')->name('oauth.redirect');
 });
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+    ->where('provider', 'google')->middleware('throttle:30,1,oauth-return')->name('oauth.google.callback');
+Route::post('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+    ->where('provider', 'apple')->middleware('throttle:30,1,oauth-return')->name('oauth.apple.callback');
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'activo', 'auth.session'])->group(function (): void {
     Route::get('/inicio', DashboardController::class)->name('dashboard');
+    Route::view('/cuenta/conexiones', 'auth.conexiones')->name('cuenta.conexiones');
+    Route::post('/auth/{provider}/vincular', [SocialAuthController::class, 'link'])
+        ->whereIn('provider', ['google', 'apple'])->middleware('throttle:20,1,oauth-start')->name('oauth.link');
     Route::get('/mi-perfil', [ClienteController::class, 'profile'])->middleware('rol:cliente')->name('perfil');
     Route::middleware('rol:administrador,trabajador')->group(function (): void {
         // Se conserva el CRUD y se añade edición de fichas.

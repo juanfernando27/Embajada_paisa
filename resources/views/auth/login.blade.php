@@ -11,7 +11,15 @@
     <x-field name="email" label="Correo electrónico" type="email" :required="true" maxlength="150" autocomplete="username" placeholder="tu@correo.com" autofocus/>
     <div class="password-wrap"><x-field name="password" label="Contraseña" type="password" :required="true" maxlength="255" autocomplete="current-password"/><button type="button" class="password-toggle" data-password="password" aria-label="Mostrar contraseña" aria-pressed="false"><x-icon name="eye"/></button></div>
     <button class="button full">Ingresar <x-icon name="arrow" size="18"/></button>
-   </form><p class="login-help"><a class="text-link" href="{{ route('registro') }}">Crear una cuenta de cliente</a><br><a class="text-link" href="{{ route('menu.index') }}">Ver nuestra carta</a><br><br>¿Necesitas una cuenta o recuperar tu acceso?<br>Comunícate con el administrador del restaurante.</p>
+   </form>
+   @error('oauth')<p role="alert" class="field-error">{{ $message }}</p>@enderror
+   @if (config('services.google.enabled') || config('services.apple.enabled'))
+       <div class="stack spaced" aria-label="Otros métodos de acceso">
+           @if (config('services.google.enabled'))<a class="button secondary full" href="{{ route('oauth.redirect', 'google') }}">Continuar con Google</a>@endif
+           @if (config('services.apple.enabled'))<a class="button secondary full" href="{{ route('oauth.redirect', 'apple') }}">Continuar con Apple</a>@endif
+       </div>
+   @endif
+   <p class="login-help"><a class="text-link" href="{{ route('registro') }}">Crear una cuenta de cliente</a><br><a class="text-link" href="{{ route('menu.index') }}">Ver nuestra carta</a><br><br>¿Necesitas una cuenta o recuperar tu acceso?<br>Comunícate con el administrador del restaurante.</p>
    <div class="login-fine"><x-icon name="shield" size="16"/> Tu acceso es personal. Cuida tus credenciales.</div>
   </div></section>
  </main>
