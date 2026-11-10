@@ -2,11 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\ReservaConfirmada;
 use App\Models\Cliente;
 use App\Models\Mesa;
 use App\Models\Reserva;
 use App\Services\ReservationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
+
+use function Illuminate\Support\defer;
 
 class ReservationController extends OperationController
 {
@@ -46,7 +52,7 @@ class ReservationController extends OperationController
     {
         $r->validate(['fecha' => 'nullable|date_format:Y-m-d', 'hora' => 'nullable|date_format:H:i', 'comensales' => 'nullable|integer|min:1|max:30', 'duracion' => 'nullable|integer|min:30|max:240', 'mesa_id' => 'nullable|integer']);
         $mesas = Mesa::where('habilitada', true)->orderBy('numero')->get();
-        $clientes = $r->user()->rol !== 'cliente' ? Cliente::orderBy('nombre')->get() : collect();
+        $clientes = $r->user()->rol !== 'cliente' ? Cliente::with('user:id,email')->orderBy('nombre')->get() : collect();
 
         return view('reservas.form', compact('reserva', 'mesas', 'clientes'));
     }
@@ -70,7 +76,37 @@ class ReservationController extends OperationController
     {
         $v = $this->service->save($r->user(), $this->data($r));
 
-        return $this->done($r, 'Reserva confirmada.', 'reservas.index', [], $v, 201);
+        $v->load('cliente.user', 'mesa');
+        $email = $v->cliente->email ?? $v->cliente->user?->email;
+        if ($email) {
+            $mail = new ReservaConfirmada(
+                trim($v->cliente->nombre_completo),
+                (string) $v->mesa->numero,
+                $v->inicio->format('d/m/Y · g:i A'),
+                $v->fin->format('d/m/Y · g:i A'),
+                $v->comensales,
+            );
+
+            defer(function () use ($email, $mail, $v): void {
+                try {
+                    Mail::to($email)->send($mail);
+                } catch (Throwable $error) {
+                    Log::warning('No fue posible enviar la confirmación de reserva.', [
+                        'reserva_id' => $v->id,
+                        'type' => $error::class,
+                    ]);
+                }
+            });
+        }
+
+        return $this->done(
+            $r,
+            $email ? 'Reserva confirmada.' : 'Reserva confirmada. El cliente no tiene correo registrado.',
+            'reservas.index',
+            [],
+            $v->withoutRelations(),
+            201,
+        );
     }
 
     public function update(Request $r, Reserva $reserva)

@@ -39,9 +39,20 @@ class SocialAuthenticationTest extends TestCase
         $user = User::sole();
         $this->assertAuthenticatedAs($user);
         $this->assertSame('cliente', $user->rol);
-        $this->assertNotNull($user->cliente);
+        $client = $user->cliente;
+        $this->assertNotNull($client);
+        $this->get('/mi-perfil')->assertOk()->assertSee('google@example.test');
         Mail::assertSentCount(1);
-        Mail::assertSent(LoginSucceeded::class);
+        Mail::assertSent(LoginSucceeded::class, fn ($mail) => $mail->hasTo('google@example.test'));
+
+        $admin = User::factory()->create(['rol' => 'administrador']);
+        $this->flushSession()->actingAs($admin)->get('/clientes?buscar=google%40example.test')
+            ->assertOk()->assertSee('google@example.test');
+        $this->get(route('clientes.show', $client))->assertOk()->assertSee('google@example.test');
+
+        $client->update(['email' => 'contacto@example.test']);
+        $this->get(route('clientes.show', $client))->assertOk()
+            ->assertSee('contacto@example.test')->assertDontSee('google@example.test');
     }
 
     public function test_apple_form_post_requires_the_original_state_and_nonce(): void

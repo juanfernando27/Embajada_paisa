@@ -17,11 +17,14 @@ class ClienteController extends Controller
     {
         $filters = $request->validate(['buscar' => ['nullable', 'string', 'max:100']]);
         $buscar = $filters['buscar'] ?? '';
-        $clientes = Cliente::query()->when($buscar !== '', function ($query) use ($buscar): void {
+        $clientes = Cliente::query()->with('user:id,email')->when($buscar !== '', function ($query) use ($buscar): void {
             $query->where(function ($q) use ($buscar): void {
                 foreach (['nombre', 'apellido', 'numero_documento', 'email', 'telefono'] as $field) {
                     $q->orWhere($field, 'like', '%'.$buscar.'%');
                 }
+
+                $q->orWhere(fn ($account) => $account->whereNull('email')
+                    ->whereHas('user', fn ($user) => $user->where('email', 'like', '%'.$buscar.'%')));
             });
         })->orderBy('apellido')->orderBy('nombre')->orderBy('id')->paginate(10)->withQueryString();
 

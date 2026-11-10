@@ -80,3 +80,27 @@ if (photoInput) {
         if (remove) remove.checked = false;
     });
 }
+
+const reservationClient = document.querySelector('[data-reservation-client]');
+if (reservationClient) {
+    const filter = reservationClient.querySelector('[data-client-filter]');
+    const select = reservationClient.querySelector('select');
+    const message = reservationClient.querySelector('[data-client-results]');
+    const [placeholder, ...clients] = select.options;
+    const normalize = text => text.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+    const digits = text => text.replace(/\D/g, '');
+
+    filter.addEventListener('input', () => {
+        const query = normalize(filter.value.trim());
+        const phone = /^[+\d\s().-]+$/.test(query) ? digits(query) : '';
+        const previous = select.value;
+        const results = clients.filter(option => normalize(option.textContent).includes(query)
+            || (phone && digits(option.dataset.phone).includes(phone)));
+
+        select.replaceChildren(placeholder, ...results);
+        select.value = results.some(option => option.value === previous) ? previous : '';
+        message.textContent = !query
+            ? 'La confirmación se enviará al correo que aparece junto al cliente.'
+            : (results.length ? 'Selecciona al cliente que recibirá la confirmación.' : 'No se encontraron clientes.');
+    });
+}

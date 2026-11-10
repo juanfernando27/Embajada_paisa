@@ -14,6 +14,11 @@ class Cliente extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function getCorreoContactoAttribute(): ?string
+    {
+        return $this->email ?? $this->user?->email;
+    }
+
     public function getNombreCompletoAttribute(): string
     {
         return $this->nombre.' '.$this->apellido;

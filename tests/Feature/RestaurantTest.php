@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ReservaConfirmada;
 use App\Models\Auditoria;
 use App\Models\CajaTurno;
 use App\Models\CarritoItem;
@@ -19,6 +20,7 @@ use App\Services\ReservationService;
 use App\Support\Money;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -285,6 +287,44 @@ class RestaurantTest extends TestCase
         $this->actingAs($this->user('administrador'))->patchJson('/pedidos/'.$p->id.'/descuento', ['monto' => '999999', 'motivo' => 'Cortesía autorizada'])->assertUnprocessable();
         $this->patchJson('/pedidos/'.$p->id.'/descuento', ['monto' => '2000', 'motivo' => 'Cortesía autorizada'])->assertOk();
         $this->assertSame(4000000, $p->fresh()->total_centavos);
+    }
+
+    public function test_staff_reservation_sends_the_table_and_time_to_the_linked_email(): void
+    {
+        Mail::fake();
+        $user = $this->user();
+        $client = $user->cliente;
+        $client->update(['email' => null, 'telefono' => '+57 301 234 5678']);
+        $table = $this->mesa();
+        $data = $this->booking($user, $table, ['cliente_id' => $client->id]);
+
+        $this->actingAs($user)->get('/reservas/crear')->assertOk()
+            ->assertDontSee('buscar-cliente');
+        $this->flushSession()->actingAs($this->user('trabajador'))
+            ->get('/reservas/crear')->assertOk()
+            ->assertSee($user->email)->assertSee('+57 301 234 5678');
+
+        $this->postJson('/reservas', $data)->assertCreated()
+            ->assertJsonPath('data.cliente_id', $client->id)
+            ->assertJsonMissingPath('data.cliente');
+        Mail::assertSent(ReservaConfirmada::class, fn ($mail) => $mail->hasTo($user->email)
+            && $mail->mesa === (string) $table->numero
+            && str_ends_with($mail->inicio, '1:00 PM')
+            && str_ends_with($mail->fin, '2:30 PM'));
+        $this->postJson('/reservas', $data)->assertUnprocessable();
+        Mail::assertSentCount(1);
+    }
+
+    public function test_staff_reservation_can_be_saved_for_a_client_with_only_a_phone(): void
+    {
+        Mail::fake();
+        $staff = $this->user('trabajador');
+        $client = Cliente::create(['nombre' => 'Ana', 'apellido' => 'Prueba', 'telefono' => '3012345678']);
+        $data = $this->booking($staff, $this->mesa(), ['cliente_id' => $client->id]);
+
+        $this->actingAs($staff)->postJson('/reservas', $data)->assertCreated()
+            ->assertJsonPath('message', 'Reserva confirmada. El cliente no tiene correo registrado.');
+        Mail::assertNothingSent();
     }
 
     public function test_reservation_overlap_capacity_and_adjacent_times(): void
