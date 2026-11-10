@@ -390,10 +390,23 @@ class RestaurantTest extends TestCase
         $this->assertDatabaseCount('pagos', 0);
     }
 
+    public function test_public_restaurant_page_shows_the_pasto_location_and_contact_details(): void
+    {
+        $this->get('/restaurante')->assertOk()
+            ->assertSee('Cl 15 #26-70')
+            ->assertSee('Pasto, Nariño')
+            ->assertSee('href="tel:+573017683405"', false)
+            ->assertSee('Lunes a sábado: 8:00 AM – 6:00 PM')
+            ->assertSee('Domingo: 8:00 AM – 4:00 PM')
+            ->assertSee('https://www.google.com/maps?q=Cl%2015%20%2326-70%2C%20Pasto%2C%20Nari%C3%B1o%2C%20Colombia', false)
+            ->assertSee('Cómo llegar');
+    }
+
     public function test_restaurant_configuration_and_report_csv_validation(): void
     {
         $this->actingAs($this->user('administrador'))->putJson('/configuracion', ['nombre' => 'La Embajada Paisa', 'ciudad' => 'Pasto', 'direccion' => 'Dirección de prueba', 'telefono' => '3000000000', 'horario' => 'Horario de prueba', 'latitud' => '1.2', 'longitud' => '-77.2'])->assertOk();
-        $this->get('/restaurante')->assertSee('Dirección de prueba')->assertSee('Ver ubicación en el mapa');
+        $this->get('/restaurante')->assertSee('Dirección de prueba')->assertSee('Cómo llegar')
+            ->assertSee('title="Mapa de ubicación de La Embajada Paisa"', false);
         $this->getJson('/reportes?desde=2026-02-01&hasta=2025-01-01')->assertUnprocessable();
         $this->get('/reportes/ventas.csv')->assertOk()->assertDownload('ventas_embajada.csv');
     }
